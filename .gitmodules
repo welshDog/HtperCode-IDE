@@ -1,0 +1,6 @@
+[submodule "packages/compiler"]
+	path = packages/compiler
+	url = https://github.com/welshDog/HYPERcode-V2.git
+[submodule "core"]
+	path = packages/core
+	url = https://github.com/welshDog/HyperCode-V1.git

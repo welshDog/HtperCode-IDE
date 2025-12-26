@@ -1,13 +1,16 @@
 {
-  "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
-    "@fontsource/roboto": "^5.2.9",
-    "@fontsource/vt323": "^5.2.7",
-    "@monaco-editor/react": "^4.7.0",
-    "@mui/icons-material": "^7.3.6",
-    "@mui/material": "^7.3.6",
-    "react-confetti": "^6.4.0",
-    "react-use": "^17.6.0"
+  "name": "hypercode-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "yarn workspaces run build",
+    "dev": "yarn workspace @hypercode/ide dev",
+    "test": "yarn workspaces run test",
+    "clean": "rm -rf node_modules && yarn workspaces run clean"
+  },
+  "devDependencies": {
+    "typescript": "^4.5.5"
   }
 }
