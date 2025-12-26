@@ -1,0 +1,147 @@
+:root {
+  --primary: #32b8c6;
+  --secondary: #2c3e50;
+  --background: #1a1a2e;
+  --surface: #16213e;
+  --text: #e6e6e6;
+  --text-secondary: #b3b3b3;
+  --success: #4caf50;
+  --error: #f44336;
+  --warning: #ff9800;
+  --border-radius: 8px;
+  --spacing-unit: 1rem;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--background);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  background-color: var(--surface);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.app-header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+main {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.welcome, .dashboard {
+  background-color: var(--surface);
+  border-radius: var(--border-radius);
+  padding: 2rem;
+  text-align: center;
+  margin-top: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.welcome h2 {
+  color: var(--primary);
+  margin-bottom: 1rem;
+}
+
+.welcome p {
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+}
+
+.connect-button, .disconnect-button {
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.connect-button:hover {
+  background-color: #2a9dab;
+  transform: translateY(-1px);
+}
+
+.connect-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.disconnect-button {
+  background-color: var(--error);
+}
+
+.disconnect-button:hover {
+  background-color: #d32f2f;
+  transform: translateY(-1px);
+}
+
+.wallet-info {
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ide-container {
+  background-color: #1e1e2f;
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  min-height: 300px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ide-container h2 {
+  color: var(--primary);
+  margin-bottom: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .wallet-info {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+  
+  main {
+    padding: 1rem;
+  }
+}

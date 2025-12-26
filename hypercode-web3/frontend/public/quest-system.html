@@ -1,0 +1,280 @@
+<!-- QUEST SYSTEM MODULE for HyperCode Hub -->
+<!-- Add this to replace the existing sidebar quest rendering section -->
+
+<script>
+// ========== ENHANCED QUEST SYSTEM ==========
+
+const questDefinitions = [
+    {
+        id: 'write_functions',
+        name: 'Write 5 Functions',
+        description: 'Declare 5 functions in your code',
+        target: 5,
+        reward_coins: 50,
+        reward_xp: 100,
+        icon: '⚡',
+        detection_type: 'function_count',
+        regex: /function\s+\w+\s*\(/g
+    },
+    {
+        id: 'debug_lines',
+        name: 'Debug 3 Lines',
+        description: 'Fix 3 errors in your code',
+        target: 3,
+        reward_coins: 100,
+        reward_xp: 150,
+        icon: '🐛',
+        detection_type: 'error_fix',
+        trackErrorsFixed: true
+    },
+    {
+        id: 'share_code',
+        name: 'Share Code',
+        description: 'Export or share your code',
+        target: 1,
+        reward_coins: 150,
+        reward_xp: 200,
+        icon: '📤',
+        detection_type: 'manual_action',
+        action: 'share'
+    }
+];
+
+// Track quest progress
+let questState = JSON.parse(localStorage.getItem('hypercode_quests')) || initializeQuests();
+let previousErrorCount = 0;
+
+function initializeQuests() {
+    const today = new Date().toDateString();
+    const stored = localStorage.getItem('hypercode_quests');
+    const quests = stored ? JSON.parse(stored) : {};
+    
+    if (quests.lastResetDate !== today) {
+        // Reset daily quests
+        quests.lastResetDate = today;
+        questDefinitions.forEach(q => {
+            quests[q.id] = {
+                progress: 0,
+                completed: false,
+                reward_claimed: false
+            };
+        });
+    }
+    return quests;
+}
+
+function saveQuestState() {
+    localStorage.setItem('hypercode_quests', JSON.stringify(questState));
+}
+
+// DETECTION: Function writing
+function detectFunctionWrites(code) {
+    const matches = code.match(/function\s+\w+\s*\(/g) || [];
+    return matches.length;
+}
+
+// DETECTION: Error fixing (compare before/after)
+function detectErrorFixes() {
+    // Returns how many errors were fixed in last run
+    // This is tracked by comparing current error count to previous
+    return state.stats?.errorsFixed || 0;
+}
+
+// DETECTION: Code sharing
+function trackCodeShare() {
+    if (questState['share_code']) {
+        questState['share_code'].progress = 1;
+        questState['share_code'].completed = true;
+        claimQuestReward('share_code');
+    }
+}
+
+// Update quest progress based on code analysis
+function updateQuestProgress(code, lastRunHadErrors = false) {
+    const today = new Date().toDateString();
+    
+    // Reset if day changed
+    if (questState.lastResetDate !== today) {
+        questDefinitions.forEach(q => {
+            questState[q.id] = { progress: 0, completed: false, reward_claimed: false };
+        });
+        questState.lastResetDate = today;
+    }
+    
+    // Check: Write 5 Functions
+    const functionCount = detectFunctionWrites(code);
+    if (questState['write_functions'].progress < functionCount) {
+        const newFunctions = functionCount - questState['write_functions'].progress;
+        questState['write_functions'].progress = functionCount;
+        
+        // Reward each new function
+        for (let i = 0; i < newFunctions; i++) {
+            earnCoins(50, `Function ${questState['write_functions'].progress}/5 written`);
+        }
+        
+        if (functionCount >= 5) {
+            questState['write_functions'].completed = true;
+            claimQuestReward('write_functions');
+        }
+    }
+    
+    // Check: Debug code (handled in runCode function)
+    
+    saveQuestState();
+    renderQuestUI();
+}
+
+// Claim quest reward
+function claimQuestReward(questId) {
+    const quest = questState[questId];
+    if (quest.completed && !quest.reward_claimed) {
+        const questDef = questDefinitions.find(q => q.id === questId);
+        const rewardCoins = questDef.reward_coins;
+        const rewardXp = questDef.reward_xp;
+        
+        earnCoins(rewardCoins + 50, `Quest Complete: ${questDef.name}! (BONUS +50)`);
+        state.user.xp += rewardXp;
+        
+        quest.reward_claimed = true;
+        saveQuestState();
+        saveState();
+        updateUI();
+        
+        showNotification(`🎉 Quest Complete: ${questDef.name}! +${rewardCoins} BROski$`);
+        
+        // Check if all quests done
+        checkDailyQuestCompletion();
+    }
+}
+
+// Check if all quests completed today
+function checkDailyQuestCompletion() {
+    const allCompleted = questDefinitions.every(q => questState[q.id].completed);
+    if (allCompleted && !questState.dailyBonusClaimed) {
+        const dailyBonus = 300;
+        earnCoins(dailyBonus, 'Daily Quest Completion Bonus!');
+        state.user.streak += 1;
+        
+        // Pet evolution
+        if (state.user.streak % 7 === 0) {
+            state.user.pet_stage = Math.min(state.user.pet_stage + 1, 3);
+            showNotification(`🐉 Pet evolved! Stage ${state.user.pet_stage + 1}`);
+        }
+        
+        questState.dailyBonusClaimed = true;
+        saveState();
+        saveQuestState();
+        showNotification(`🌟 All Quests Complete! +${dailyBonus} BROski$ Bonus!`);
+    }
+}
+
+// Render quest UI in sidebar (for GamerCode mode)
+function renderQuestUI() {
+    const questContainer = document.getElementById('questContainer');
+    if (!questContainer) return;
+    
+    questContainer.innerHTML = questDefinitions.map(quest => {
+        const progress = questState[quest.id];
+        const percentage = Math.min((progress.progress / quest.target) * 100, 100);
+        const isComplete = progress.completed;
+        
+        return `
+            <div class="quest-item ${isComplete ? 'quest-complete' : ''}">
+                <div class="quest-header">
+                    <span class="quest-icon">${quest.icon}</span>
+                    <span class="quest-name">${quest.name}</span>
+                    <span class="quest-status">${progress.progress}/${quest.target}</span>
+                </div>
+                <div class="quest-progress-bar">
+                    <div class="quest-progress-fill" style="width: ${percentage}%"></div>
+                </div>
+                <div class="quest-reward">
+                    ${quest.reward_coins} BROski$ + ${quest.reward_xp} XP
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Export functions for use in main script
+window.updateQuestProgress = updateQuestProgress;
+window.trackCodeShare = trackCodeShare;
+window.checkDailyQuestCompletion = checkDailyQuestCompletion;
+</script>
+
+<!-- CSS for Quest UI -->
+<style>
+.quest-item {
+    background: rgba(50, 184, 198, 0.08);
+    border: 1px solid rgba(50, 184, 198, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.quest-item:hover {
+    background: rgba(50, 184, 198, 0.15);
+    border-color: var(--primary);
+}
+
+.quest-item.quest-complete {
+    background: rgba(74, 222, 128, 0.1);
+    border-color: var(--success);
+}
+
+.quest-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    gap: 8px;
+}
+
+.quest-icon {
+    font-size: 18px;
+}
+
+.quest-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--text-light);
+}
+
+.quest-status {
+    font-size: 12px;
+    color: var(--gold);
+    font-weight: bold;
+    background: rgba(255, 215, 0, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.quest-progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    border: 1px solid rgba(50, 184, 198, 0.2);
+}
+
+.quest-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--gold));
+    transition: width 0.3s ease;
+}
+
+.quest-reward {
+    font-size: 11px;
+    color: #999;
+    text-align: right;
+}
+
+.quest-item.quest-complete .quest-reward {
+    color: var(--success);
+    font-weight: bold;
+}
+</style>

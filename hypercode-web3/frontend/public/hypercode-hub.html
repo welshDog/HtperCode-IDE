@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HyperCode Hub – Core IDE + Shop</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #32b8c6;
+            --primary-dark: #2a9fb3;
+            --gold: #ffd700;
+            --bg-dark: #1a1a2e;
+            --bg-darker: #0f0f1e;
+            --text-light: #e0e0e0;
+            --success: #4ade80;
+            --error: #ff6b6b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background-color: var(--bg-darker);
+            color: var(--text-light);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ========== TOP BAR ========== */
+        .top-bar {
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #16213e 100%);
+            border-bottom: 2px solid var(--primary);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            font-weight: bold;
+            font-size: 18px;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .level-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(50, 184, 198, 0.1);
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--primary);
+        }
+
+        .level-text {
+            font-size: 12px;
+            color: var(--gold);
+            font-weight: bold;
+        }
+
+        .xp-bar {
+            width: 150px;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            overflow: hidden;
+            border: 1px solid var(--primary);
+        }
+
+        .xp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--gold));
+            width: 68%;
+            transition: width 0.3s ease;
+        }
+
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .coins-display {
+            background: rgba(255, 215, 0, 0.1);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--gold);
+        }
+
+        .coins-display::before {
+            content: '💰';
+            font-size: 16px;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-shop {
+            background: linear-gradient(135deg, var(--gold), #ffed4e);
+            color: #000;
+            border: 2px solid var(--gold);
+        }
+
+        .btn-shop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .btn-settings {
+            background: rgba(50, 184, 198, 0.1);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+
+        .btn-settings:hover {
+            background: rgba(50, 184, 198, 0.2);
+        }
+
+        /* ========== MAIN CONTAINER ========== */
+        .container {
+            display: flex;
+            height: calc(100vh - 60px);
+            gap: 0;
+        }
+
+        /* ========== EDITOR SECTION ========== */
+        .editor-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-dark);
+        }
+
+        .mode-tabs {
+            display: flex;
+            gap: 8px;
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid #333;
+            flex-wrap: wrap;
+        }
+
+        .mode-tab {
+            padding: 8px 14px;
+            background: rgba(50, 184, 198, 0.1);
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .mode-tab:hover {
+            border-color: var(--primary);
+            background: rgba(50, 184, 198, 0.2);
+        }
+
+        .mode-tab.active {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-color: var(--primary);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(50, 184, 198, 0.4);
+        }
+
+        .editor-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .code-editor {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .editor-input {
+            flex: 1;
+            padding: 20px;
+            background: var(--bg-darker);
+            color: var(--text-light);
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            border: none;
+            resize: none;
+            outline: none;
+            overflow: auto;
+            border: 1px solid #333;
+            margin: 1px;
+        }
+
+        .editor-input::selection {
+            background: rgba(50, 184, 198, 0.3);
+        }
+
+        .output-section {
+            background: rgba(0, 0, 0, 0.5);
+            border-top: 1px solid #333;
+            padding: 12px 20px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: 'Monaco', monospace;
+            font-size: 12px;
+            color: var(--success);
+        }
+
+        .output-label {
+            color: var(--primary);
+            font-weight: bold;
+            margin-bottom: 6px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .output-text {
+            color: var(--text-light);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .output-error {
+            color: var(--error);
+        }
+
+        /* ========== RIGHT SIDEBAR ========== */
+        .sidebar {
+            width: 300px;
+            background: rgba(20, 30, 50, 0.5);
+            border-left: 1px solid #333;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sidebar-section {
+            background: rgba(50, 184, 198, 0.05);
+            border: 1px solid rgba(50, 184, 198, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .sidebar-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(50, 184, 198, 0.1);
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #999;
+        }
+
+        .stat-value {
+            color: var(--gold);
+            font-weight: bold;
+        }
+
+        .pet-display {
+            text-align: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            font-size: 40px;
+            margin: 10px 0;
+        }
+
+        .control-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .btn-small {
+            padding: 10px 12px;
+            background: rgba(50, 184, 198, 0.2);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+        }
+
+        .btn-small:hover {
+            background: rgba(50, 184, 198, 0.4);
+            box-shadow: 0 0 10px rgba(50, 184, 198, 0.3);
+        }
+
+        .btn-small.success {
+            background: rgba(74, 222, 128, 0.2);
+            color: var(--success);
+            border-color: var(--success);
+        }
+
+        .btn-small.success:hover {
+            background: rgba(74, 222, 128, 0.4);
+        }
+
+        /* ========== MODAL ========== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-dark);
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-header {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 28px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .modal-close:hover {
+            transform: rotate(90deg);
+        }
+
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(50, 184, 198, 0.05);
+            padding: 16px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(50, 184, 198, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .shop-item:hover {
+            background: rgba(50, 184, 198, 0.1);
+            border-color: var(--primary);
+        }
+
+        .shop-item-info h3 {
+            color: var(--text-light);
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .shop-item-info p {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .shop-item-action {
+            text-align: right;
+        }
+
+        .shop-price {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--gold);
+            margin-bottom: 6px;
+        }
+
+        .btn-buy {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+        }
+
+        .btn-buy:hover:not(:disabled) {
+            box-shadow: 0 0 15px rgba(50, 184, 198, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .btn-buy:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ========== STATUS BAR ========== */
+        .status-bar {
+            background: rgba(0, 0, 0, 0.5);
+            border-top: 1px solid #333;
+            padding: 10px 20px;
+            font-size: 12px;
+            color: #999;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-left, .status-right {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, var(--success), #22c55e);
+            color: #fff;
+            padding: 16px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            animation: slideIn 0.3s ease, slideOut 0.3s ease 2.7s;
+            z-index: 2000;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        /* ========== SCROLLBARS ========== */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(50, 184, 198, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+
+        /* ========== ANIMATIONS ========== */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <div class="logo">⚡ HyperCode Hub</div>
+            <div class="level-section">
+                <span class="level-text">Level <span id="level">1</span></span>
+                <div class="xp-bar">
+                    <div class="xp-fill" id="xpFill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="top-bar-right">
+            <div class="coins-display" id="coinsDisplay">0</div>
+            <button class="btn btn-shop" onclick="openShop()">🛍️ SHOP</button>
+            <button class="btn btn-settings" onclick="openSettings()">⚙️ Settings</button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="container">
+        <!-- EDITOR -->
+        <div class="editor-section">
+            <!-- MODE TABS -->
+            <div class="mode-tabs">
+                <button class="mode-tab active" onclick="switchMode('hypercode_v2', this)">HyperCode-V2</button>
+                <button class="mode-tab" onclick="switchMode('gamercode', this)">🎮 GamerCode</button>
+                <button class="mode-tab" onclick="switchMode('minimalflow', this)">✨ MinimalFlow</button>
+                <button class="mode-tab" onclick="switchMode('quantumviz', this)">🔬 QuantumViz</button>
+            </div>
+
+            <!-- EDITOR CONTENT -->
+            <div class="editor-content">
+                <div class="code-editor">
+                    <textarea 
+                        class="editor-input" 
+                        id="codeEditor" 
+                        placeholder="// Write your code here&#10;&#10;console.log('Hello from HyperCode Hub!');&#10;&#10;function helloWorld() {&#10;  return 'Coding is fun!';&#10;}&#10;&#10;helloWorld();"
+                    ></textarea>
+                    <div class="output-section">
+                        <div class="output-label">📤 Output:</div>
+                        <div class="output-text" id="output">Ready to run code...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SIDEBAR -->
+        <div class="sidebar" id="modeSpecificSidebar">
+            <!-- This changes based on active mode -->
+        </div>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+        <div class="status-left">
+            <div class="status-item">
+                <span class="status-dot"></span>
+                <span id="statusText">Ready</span>
+            </div>
+            <div class="status-item">
+                📝 <span id="charCount">0</span> chars
+            </div>
+        </div>
+        <div class="status-right">
+            <div class="status-item">
+                💾 Auto-saved
+            </div>
+        </div>
+    </div>
+
+    <!-- SHOP MODAL -->
+    <div class="modal" id="shopModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                🛍️ Unlock Modes
+                <button class="modal-close" onclick="closeShop()">×</button>
+            </div>
+            <div id="shopItemsContainer"></div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                ⚙️ Settings
+                <button class="modal-close" onclick="closeSettings()">×</button>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-title">🎨 Appearance</div>
+                <label style="display: block; margin: 10px 0;">
+                    <input type="checkbox" id="dyslexicFont"> OpenDyslexic Font
+                </label>
+                <label style="display: block; margin: 10px 0;">
+                    <input type="checkbox" id="highContrast"> High Contrast Mode
+                </label>
+            </div>
+            <div class="control-buttons">
+                <button class="btn-small success" onclick="resetProgress()">Reset Progress</button>
+                <button class="btn-small" onclick="exportData()">Export Data</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== DATA SYSTEM ==========
+        const defaultState = {
+            user: {
+                level: 1,
+                xp: 0,
+                coins: 500,
+                streak: 0,
+                lastActiveDate: new Date().toDateString(),
+                unlocked_modes: ['hypercode_v2'],
+                current_mode: 'hypercode_v2',
+                pet_stage: 0,
+                achievements: []
+            },
+            shop: {
+                modes: [
+                    { id: 'hypercode_v2', name: 'HyperCode-V2', cost: 0, owned: true },
+                    { id: 'gamercode', name: '🎮 GamerCode', cost: 500, owned: false },
+                    { id: 'minimalflow', name: '✨ MinimalFlow', cost: 300, owned: false },
+                    { id: 'quantumviz', name: '🔬 QuantumViz', cost: 750, owned: false }
+                ]
+            },
+            code: {
+                files: {
+                    'main.js': 'console.log(\'Hello from HyperCode Hub!\');\n\nfunction helloWorld() {\n  return \'Coding is fun!\';\n}\n\nhelloWorld();'
+                }
+            }
+        };
+
+        let state = JSON.parse(localStorage.getItem('hypercode_state')) || defaultState;
+
+        // ========== SAVE SYSTEM ==========
+        function saveState() {
+            localStorage.setItem('hypercode_state', JSON.stringify(state));
+        }
+
+        // ========== EARNINGS SYSTEM ==========
+        function earnCoins(amount, reason) {
+            state.user.coins += amount;
+            state.user.xp += amount;
+            
+            // Level up every 1000 XP
+            const newLevel = Math.floor(state.user.xp / 1000) + 1;
+            if (newLevel > state.user.level) {
+                state.user.level = newLevel;
+                showNotification(`🎉 Level Up! You're now Level ${newLevel}!`);
+            }
+            
+            saveState();
+            updateUI();
+            showNotification(`+${amount} BROski$ (${reason})`);
+        }
+
+        // ========== CODE EDITOR ==========
+        const codeEditor = document.getElementById('codeEditor');
+        
+        codeEditor.addEventListener('input', () => {
+            document.getElementById('charCount').textContent = codeEditor.value.length;
+            state.code.files['main.js'] = codeEditor.value;
+            saveState();
+        });
+
+        codeEditor.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = codeEditor.selectionStart;
+                const end = codeEditor.selectionEnd;
+                codeEditor.value = codeEditor.value.substring(0, start) + '\t' + codeEditor.value.substring(end);
+                codeEditor.selectionStart = codeEditor.selectionEnd = start + 1;
+                codeEditor.dispatchEvent(new Event('input'));
+            }
+            
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                earnCoins(50, 'Code saved');
+            }
+            
+            if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+                e.preventDefault();
+                runCode();
+            }
+        });
+
+        // ========== RUN CODE ==========
+        function runCode() {
+            const output = document.getElementById('output');
+            try {
+                let logs = [];
+                const originalLog = console.log;
+                console.log = (...args) => logs.push(args.join(' '));
+                
+                eval(codeEditor.value);
+                
+                console.log = originalLog;
+                output.innerHTML = logs.join('\n') || '✅ Code executed successfully!';
+                output.className = 'output-text';
+                earnCoins(25, 'Code executed');
+            } catch (err) {
+                output.innerHTML = `❌ Error: ${err.message}`;
+                output.className = 'output-text output-error';
+            }
+        }
+
+        // ========== UI UPDATES ==========
+        function updateUI() {
+            document.getElementById('level').textContent = state.user.level;
+            document.getElementById('coinsDisplay').textContent = state.user.coins.toLocaleString();
+            
+            const xpInLevel = state.user.xp % 1000;
+            document.getElementById('xpFill').style.width = (xpInLevel / 1000 * 100) + '%';
+            
+            renderSidebar();
+            renderShop();
+        }
+
+        // ========== MODE SWITCHING ==========
+        function switchMode(modeId, element) {
+            const mode = state.shop.modes.find(m => m.id === modeId);
+            
+            if (!mode.owned && mode.cost > 0) {
+                showNotification(`💰 Buy this mode for ${mode.cost} BROski$!`);
+                openShop();
+                return;
+            }
+            
+            state.user.current_mode = modeId;
+            saveState();
+            
+            document.querySelectorAll('.mode-tab').forEach(tab => tab.classList.remove('active'));
+            element.classList.add('active');
+            
+            renderSidebar();
+        }
+
+        // ========== SIDEBAR RENDERING ==========
+        function renderSidebar() {
+            const sidebar = document.getElementById('modeSpecificSidebar');
+            const mode = state.user.current_mode;
+
+            switch(mode) {
+                case 'gamercode':
+                    sidebar.innerHTML = `
+                        <div class="sidebar-section">
+                            <div class="sidebar-title">🎮 Game Status</div>
+                            <div class="stat-row">
+                                <span class="stat-label">Pet Stage</span>
+                                <span class="stat-value">${state.user.pet_stage}/3</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Current Streak</span>
+                                <span class="stat-value">🔥 ${state.user.streak}</span>
+                            </div>
+                            <div class="pet-display" id="petDisplay">
+                                ${state.user.pet_stage === 0 ? '🥚' : state.user.pet_stage === 1 ? '🐣' : state.user.pet_stage === 2 ? '🐉' : '👑'}
+                            </div>
+                        </div>
+                        <div class="sidebar-section">
+                            <div class="sidebar-title">📋 Today's Quests</div>
+                            <div class="stat-row"><span>✓ Write 5 functions</span><span>2/5</span></div>
+                            <div class="stat-row"><span>✓ Debug code</span><span>1/3</span></div>
+                            <div class="stat-row"><span>✓ Share code</span><span>0/1</span></div>
+                        </div>
+                        <div class="control-buttons">
+                            <button class="btn-small success" onclick="earnCoins(100, 'Pet fed')">Feed Pet 🍗</button>
+                            <button class="btn-small" onclick="runCode()">Run Code ▶️</button>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'minimalflow':
+                    sidebar.innerHTML = `
+                        <div class="sidebar-section" style="text-align: center;">
+                            <div class="sidebar-title">🧠 Focus Mode</div>
+                            <p style="color: #999; font-size: 13px; margin: 10px 0;">Distractions: OFF<br>Notifications: OFF<br>Focus Time: ${Math.floor(Math.random() * 120)}min</p>
+                            <div class="control-buttons" style="margin-top: 15px;">
+                                <button class="btn-small success" onclick="runCode()">Run ▶️</button>
+                                <button class="btn-small" onclick="saveData()">Save 💾</button>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'quantumviz':
+                    sidebar.innerHTML = `
+                        <div class="sidebar-section">
+                            <div class="sidebar-title">🔬 Quantum State</div>
+                            <div class="stat-row">
+                                <span class="stat-label">Qubits</span>
+                                <span class="stat-value">3</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Circuit Depth</span>
+                                <span class="stat-value">5</span>
+                            </div>
+                            <div style="margin-top: 15px; padding: 15px; background: rgba(50, 184, 198, 0.1); border-radius: 6px; text-align: center;">
+                                <div style="font-size: 12px; color: #999;">Quantum Circuit Preview</div>
+                                <div style="font-size: 20px; margin-top: 10px;">━━━⊗━━━</div>
+                            </div>
+                        </div>
+                        <div class="control-buttons">
+                            <button class="btn-small success" onclick="runCode()">Simulate 🚀</button>
+                            <button class="btn-small" onclick="earnCoins(50, 'Quantum explored')">Explore</button>
+                        </div>
+                    `;
+                    break;
+                    
+                default:
+                    sidebar.innerHTML = `
+                        <div class="sidebar-section">
+                            <div class="sidebar-title">📊 Stats</div>
+                            <div class="stat-row">
+                                <span class="stat-label">Total Lines</span>
+                                <span class="stat-value">${codeEditor.value.split('\n').length}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Executions</span>
+                                <span class="stat-value">12</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Session Time</span>
+                                <span class="stat-value">45min</span>
+                            </div>
+                        </div>
+                        <div class="control-buttons">
+                            <button class="btn-small success" onclick="runCode()">Run Code ▶️</button>
+                            <button class="btn-small" onclick="saveData()">Save 💾</button>
+                        </div>
+                    `;
+            }
+        }
+
+        // ========== SHOP ==========
+        function renderShop() {
+            const container = document.getElementById('shopItemsContainer');
+            const items = state.shop.modes.map(mode => `
+                <div class="shop-item">
+                    <div class="shop-item-info">
+                        <h3>${mode.name}</h3>
+                        <p>${mode.id === 'gamercode' ? 'RPG Mode with Pet & Quests' : mode.id === 'minimalflow' ? 'Distraction-Free Hyperfocus' : mode.id === 'quantumviz' ? 'Quantum Circuits Viz' : 'Classic 3-Column Layout'}</p>
+                    </div>
+                    <div class="shop-item-action">
+                        ${mode.owned ? `
+                            <div style="color: var(--success); font-weight: bold; font-size: 12px;">✓ Owned</div>
+                            <button class="btn-buy" onclick="switchMode('${mode.id}')" style="margin-top: 4px; background: rgba(50,184,198,0.3);">Use</button>
+                        ` : `
+                            <div class="shop-price">${mode.cost === 0 ? 'FREE' : mode.cost + ' BROski$'}</div>
+                            <button class="btn-buy" onclick="buyMode('${mode.id}')" ${state.user.coins < mode.cost ? 'disabled' : ''}>Buy</button>
+                        `}
+                    </div>
+                </div>
+            `).join('');
+            container.innerHTML = items;
+        }
+
+        function buyMode(modeId) {
+            const mode = state.shop.modes.find(m => m.id === modeId);
+            if (state.user.coins >= mode.cost) {
+                state.user.coins -= mode.cost;
+                mode.owned = true;
+                state.user.unlocked_modes.push(modeId);
+                saveState();
+                updateUI();
+                showNotification(`🎉 Unlocked ${mode.name}!`);
+            }
+        }
+
+        function openShop() {
+            document.getElementById('shopModal').classList.add('active');
+        }
+
+        function closeShop() {
+            document.getElementById('shopModal').classList.remove('active');
+        }
+
+        function openSettings() {
+            document.getElementById('settingsModal').classList.add('active');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+        }
+
+        // ========== UTILITY ==========
+        function showNotification(text) {
+            const notif = document.createElement('div');
+            notif.className = 'notification';
+            notif.textContent = text;
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+        }
+
+        function saveData() {
+            earnCoins(50, 'Code saved manually');
+        }
+
+        function resetProgress() {
+            if (confirm('⚠️ Reset all progress? This cannot be undone!')) {
+                localStorage.removeItem('hypercode_state');
+                location.reload();
+            }
+        }
+
+        function exportData() {
+            const data = JSON.stringify(state, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'hypercode_backup.json';
+            a.click();
+            showNotification('📥 Data exported!');
+        }
+
+        // ========== INIT ==========
+        codeEditor.value = state.code.files['main.js'];
+        document.getElementById('charCount').textContent = codeEditor.value.length;
+        updateUI();
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Shift' && e.code === 'KeyR') {
+                e.preventDefault();
+                runCode();
+            }
+        });
+
+        // Auto-save every 10 seconds
+        setInterval(saveState, 10000);
+
+        // Update char count on load
+        updateUI();
+    </script>
+</body>
+</html>

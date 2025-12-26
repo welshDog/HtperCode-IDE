@@ -1,0 +1,473 @@
+// 🔗 HYPERCODE x BROSKI TOKEN - WEB3 INTEGRATION
+
+// ============================================================
+// 1. SETUP & CONFIGURATION
+// ============================================================
+
+// Install these packages:
+// npm install ethers @web3-react/core @web3-react/injected-connector web3modal
+
+// BROski Token Details
+const BROSKI_CONFIG = {
+    name: "BROski Token",
+    symbol: "BROski",
+    contractAddress: "0x1f11078920872bf8a029c5fF000A8A441465dBBb",
+    decimals: 18,
+    chain: "Base", // or Ethereum mainnet depending on deployment
+    chainId: 8453, // Base mainnet
+    exchangeUrl: "https://www.mintme.com/token/BROski"
+};
+
+// Contract ABI (minimal needed)
+const BROSKI_ABI = [
+    "function balanceOf(address owner) external view returns (uint256)",
+    "function transfer(address to, uint256 amount) external returns (bool)",
+    "function approve(address spender, uint256 amount) external returns (bool)",
+    "function allowance(address owner, address spender) external view returns (uint256)"
+];
+
+// ============================================================
+// 2. WALLET CONNECTION (Using ethers.js)
+// ============================================================
+
+let provider;
+let signer;
+let userAddress;
+let broskiContract;
+
+async function connectWallet() {
+    try {
+        // Request wallet connection
+        const accounts = await window.ethereum.request({
+            method: 'eth_requestAccounts'
+        });
+        userAddress = accounts[0];
+        
+        // Initialize ethers provider
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
+        
+        // Initialize BROski contract
+        broskiContract = new ethers.Contract(
+            BROSKI_CONFIG.contractAddress,
+            BROSKI_ABI,
+            signer
+        );
+        
+        showNotification(`✅ Wallet Connected: ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`);
+        updateWalletUI();
+        
+        // Save connection
+        localStorage.setItem('hypercode_wallet', userAddress);
+        
+        return userAddress;
+    } catch (error) {
+        console.error("Wallet connection failed:", error);
+        showNotification("❌ Failed to connect wallet");
+    }
+}
+
+async function disconnectWallet() {
+    userAddress = null;
+    provider = null;
+    signer = null;
+    broskiContract = null;
+    localStorage.removeItem('hypercode_wallet');
+    updateWalletUI();
+    showNotification("🔌 Wallet Disconnected");
+}
+
+// ============================================================
+// 3. CHECK BROSKI BALANCE
+// ============================================================
+
+async function getBroskiBalance() {
+    if (!broskiContract || !userAddress) {
+        return 0;
+    }
+    
+    try {
+        const balance = await broskiContract.balanceOf(userAddress);
+        const balanceInTokens = ethers.utils.formatUnits(balance, BROSKI_CONFIG.decimals);
+        return parseFloat(balanceInTokens);
+    } catch (error) {
+        console.error("Error fetching balance:", error);
+        return 0;
+    }
+}
+
+// Auto-update balance every 10 seconds when wallet connected
+setInterval(async () => {
+    if (userAddress) {
+        const balance = await getBroskiBalance();
+        document.getElementById('broskiBalance').textContent = balance.toFixed(2);
+    }
+}, 10000);
+
+// ============================================================
+// 4. EARN BROSKI (Backend Minting)
+// ============================================================
+
+// This would run on your backend server (Node.js + ethers.js)
+// When a user completes quest/earns coins:
+
+async function mintBroskiToPlayer(playerWallet, amount) {
+    // This requires a backend wallet with BROSKI minting rights
+    // Pseudocode - implement on server
+    
+    /*
+    const BACKEND_PRIVATE_KEY = process.env.BACKEND_WALLET_KEY;
+    const backendWallet = new ethers.Wallet(BACKEND_PRIVATE_KEY, provider);
+    
+    const contractWithSigner = broskiContract.connect(backendWallet);
+    
+    // If contract has mint function:
+    const tx = await contractWithSigner.mint(
+        playerWallet,
+        ethers.utils.parseUnits(amount.toString(), BROSKI_CONFIG.decimals)
+    );
+    
+    await tx.wait();
+    return tx.hash;
+    */
+}
+
+// Frontend: Request backend to mint
+async function earnBroski(amount, reason) {
+    if (!userAddress) {
+        showNotification("💰 Connect wallet to earn real BROski!");
+        openWalletConnection();
+        return;
+    }
+    
+    try {
+        // Call your backend API
+        const response = await fetch('/api/earn-broski', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                wallet: userAddress,
+                amount: amount,
+                reason: reason,
+                timestamp: Date.now()
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification(`🎉 +${amount} BROski earned! (${reason})`);
+            // Update HyperCode coins display
+            state.user.coins += amount;
+            state.user.broskiEarned = (state.user.broskiEarned || 0) + amount;
+            saveState();
+            updateUI();
+            
+            // Refresh blockchain balance
+            setTimeout(() => getBroskiBalance(), 2000);
+        }
+    } catch (error) {
+        console.error("Error earning BROski:", error);
+    }
+}
+
+// ============================================================
+// 5. SPEND BROSKI (Buy Modes/Cosmetics)
+// ============================================================
+
+async function transferBroski(toAddress, amount) {
+    if (!signer || !broskiContract) {
+        showNotification("❌ Connect wallet first!");
+        return;
+    }
+    
+    try {
+        const amountInWei = ethers.utils.parseUnits(
+            amount.toString(),
+            BROSKI_CONFIG.decimals
+        );
+        
+        // Request approval first
+        const approveTx = await broskiContract.approve(
+            toAddress,
+            amountInWei
+        );
+        await approveTx.wait();
+        
+        // Then transfer
+        const transferTx = await broskiContract.transfer(toAddress, amountInWei);
+        const receipt = await transferTx.wait();
+        
+        showNotification(`✅ Transferred ${amount} BROski!`);
+        return receipt.transactionHash;
+    } catch (error) {
+        console.error("Transfer failed:", error);
+        showNotification("❌ Transfer failed - insufficient balance?");
+    }
+}
+
+// Spend BROski on shop item (updated shop system)
+async function buyModeWithBroski(modeId, costInBroski) {
+    if (!userAddress) {
+        openWalletConnection();
+        return;
+    }
+    
+    const balance = await getBroskiBalance();
+    
+    if (balance < costInBroski) {
+        showNotification(`❌ Need ${costInBroski} BROski, you have ${balance.toFixed(2)}`);
+        return;
+    }
+    
+    try {
+        // Transfer BROski to HyperCode treasury
+        const HYPERCODE_TREASURY = "0x..."; // Your treasury address
+        await transferBroski(HYPERCODE_TREASURY, costInBroski);
+        
+        // Unlock mode locally
+        const mode = state.shop.modes.find(m => m.id === modeId);
+        mode.owned = true;
+        state.user.unlocked_modes.push(modeId);
+        
+        saveState();
+        updateUI();
+        
+        showNotification(`🎉 Unlocked ${mode.name} with BROski!`);
+    } catch (error) {
+        console.error("Purchase failed:", error);
+    }
+}
+
+// ============================================================
+// 6. WITHDRAW TO WALLET
+// ============================================================
+
+async function withdrawToExchange() {
+    if (!userAddress) {
+        showNotification("Connect wallet first!");
+        return;
+    }
+    
+    showNotification(`💰 Open MintMe to trade BROski: ${BROSKI_CONFIG.exchangeUrl}`);
+    window.open(BROSKI_CONFIG.exchangeUrl, '_blank');
+}
+
+// ============================================================
+// 7. UI INTEGRATION
+// ============================================================
+
+const walletUI = `
+    <!-- TOP BAR: Add Wallet Section -->
+    <div class="wallet-section">
+        <div id="walletStatus">
+            <button id="connectWalletBtn" onclick="connectWallet()">
+                🔌 Connect Wallet
+            </button>
+        </div>
+        
+        <div id="walletConnected" style="display: none;">
+            <div class="wallet-info">
+                <span id="walletAddress">0x...</span>
+                <span id="broskiBalance">0</span> BROski 💰
+                <button onclick="disconnectWallet()">Disconnect</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- SHOP: Updated with BROski Prices -->
+    <div class="shop-item">
+        <div class="shop-item-info">
+            <h3>GamerCode Mode</h3>
+            <p>RPG Mode with Pet & Quests</p>
+        </div>
+        <div class="shop-item-action">
+            <div class="price-selector">
+                <button onclick="buyModeWithCoins('gamercode', 500)">
+                    500 💰 Coins
+                </button>
+                <button onclick="buyModeWithBroski('gamercode', 50)">
+                    50 🔗 BROski
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- SIDEBAR: Earnings Summary -->
+    <div class="sidebar-section">
+        <div class="sidebar-title">💰 Web3 Earnings</div>
+        <div class="stat-row">
+            <span class="stat-label">Real BROski Earned</span>
+            <span class="stat-value" id="realBroskiEarned">0</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Wallet Balance</span>
+            <span class="stat-value" id="walletBroskiBalance">0</span>
+        </div>
+        <button onclick="withdrawToExchange()" class="btn-small">
+            Trade on MintMe 📈
+        </button>
+    </div>
+`;
+
+function updateWalletUI() {
+    const statusDiv = document.getElementById('walletStatus');
+    const connectedDiv = document.getElementById('walletConnected');
+    const addressSpan = document.getElementById('walletAddress');
+    
+    if (userAddress) {
+        statusDiv.style.display = 'none';
+        connectedDiv.style.display = 'block';
+        addressSpan.textContent = `${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
+    } else {
+        statusDiv.style.display = 'block';
+        connectedDiv.style.display = 'none';
+    }
+}
+
+// ============================================================
+// 8. AUTO-CONNECT ON PAGE LOAD
+// ============================================================
+
+window.addEventListener('load', async () => {
+    // Check if user was previously connected
+    const savedWallet = localStorage.getItem('hypercode_wallet');
+    
+    if (window.ethereum && savedWallet) {
+        try {
+            const accounts = await window.ethereum.request({
+                method: 'eth_accounts'
+            });
+            
+            if (accounts.length > 0) {
+                await connectWallet();
+            }
+        } catch (error) {
+            console.error("Auto-connect failed:", error);
+        }
+    }
+});
+
+// ============================================================
+// 9. LISTEN FOR WALLET CHANGES
+// ============================================================
+
+if (window.ethereum) {
+    window.ethereum.on('accountsChanged', (accounts) => {
+        if (accounts.length > 0) {
+            userAddress = accounts[0];
+            updateWalletUI();
+            showNotification(`Switched to ${accounts[0].slice(0, 6)}...`);
+        } else {
+            disconnectWallet();
+        }
+    });
+    
+    window.ethereum.on('chainChanged', (chainId) => {
+        window.location.reload(); // Reload on network change
+    });
+}
+
+// ============================================================
+// 10. BACKEND API ENDPOINT (Node.js/Express)
+// ============================================================
+
+/*
+// POST /api/earn-broski
+app.post('/api/earn-broski', async (req, res) => {
+    const { wallet, amount, reason } = req.body;
+    
+    try {
+        // Verify request (anti-cheat)
+        // 1. Validate amount matches in-game action
+        // 2. Check rate limits (prevent farming)
+        // 3. Verify wallet signature (optional security)
+        
+        // Mint tokens
+        const tx = await mintBroskiToPlayer(wallet, amount);
+        
+        // Log transaction
+        await TransactionLog.create({
+            wallet,
+            amount,
+            reason,
+            txHash: tx,
+            timestamp: new Date()
+        });
+        
+        res.json({ success: true, txHash: tx });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+*/
+
+// ============================================================
+// 11. SECURITY CONSIDERATIONS
+// ============================================================
+
+/*
+IMPORTANT SECURITY NOTES:
+
+1. RATE LIMITING
+   - Limit BROski earnings per user per day
+   - Prevent farming/cheating
+   - Implement cooldowns
+
+2. ANTI-CHEAT
+   - Verify quests actually completed
+   - Server-side validation
+   - Transaction logging
+
+3. GAS OPTIMIZATION
+   - Batch mint transactions
+   - Use Layer 2 (Optimism, Arbitrum)
+   - Consider account abstraction
+
+4. WALLET SECURITY
+   - Never store private keys in browser
+   - Use hardware wallets for backend
+   - Implement 2FA for treasury
+
+5. LEGAL
+   - Check local regulations
+   - Consult lawyer on token rewards
+   - Terms of service disclaimer
+   - Tax implications for users
+
+6. SMART CONTRACT
+   - Audit contract before launch
+   - Test on testnet thoroughly
+   - Consider upgradeable proxy
+   - Set up emergency pause function
+*/
+
+// ============================================================
+// SUMMARY
+// ============================================================
+
+/*
+🎮 HYPERCODE + BROSKI = GAMING ECONOMY
+
+Flow:
+1. User connects MetaMask wallet
+2. Codes in HyperCode → Earns BROski
+3. Can spend BROski on modes/cosmetics (stays in-game)
+4. Can withdraw to wallet → Trade on MintMe for USD
+5. Can buy more BROski on exchange → Reinvest in gameplay
+
+Benefits:
+✅ Real cryptocurrency earnings motivation
+✅ Users own their tokens (true Web3)
+✅ Trading creates real value exchange
+✅ Network effects (more players = more value)
+✅ Community-driven economy
+
+Timeline:
+- Week 1: Wallet integration
+- Week 2: Backend minting system
+- Week 3: Anti-cheat/rate limiting
+- Week 4: Smart contract audit
+- Week 5: Beta launch
+- Week 6: Public launch 🚀
+*/
